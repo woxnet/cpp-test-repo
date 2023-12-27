@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <string>
@@ -7,67 +8,92 @@
 using namespace std;
 
 // ѕеречислимый тип дл€ статуса задачи
-enum class TaskStatus {
-    NEW,          // нова€
-    IN_PROGRESS,  // в разработке
-    TESTING,      // на тестировании
-    DONE          // завершена
+enum class TaskStatus
+{
+    NEW,         // нова€
+    IN_PROGRESS, // в разработке
+    TESTING,     // на тестировании
+    DONE         // завершена
 };
 
 // ќбъ€вл€ем тип-синоним дл€ map<TaskStatus, int>,
 // позвол€ющего хранить количество задач каждого статуса
 using TasksInfo = map<TaskStatus, int>;
 
-class TeamTasks {
+class TeamTasks
+{
 public:
     // ѕолучить статистику по статусам задач конкретного разработчика
-    const TasksInfo& GetPersonTasksInfo(const string& person) const {
+    const TasksInfo &GetPersonTasksInfo(const string &person) const
+    {
 
-        return persons.at(person);
+        return persons_.at(person);
     }
 
     // ƒобавить новую задачу (в статусе NEW) дл€ конкретного разработчитка
-    void AddNewTask(const string& person) {
-        ++persons[person][TaskStatus::NEW];
+    void AddNewTask(const string &person)
+    {
+        ++persons_[person][TaskStatus::NEW];
     }
 
     // ќбновить статусы по данному количеству задач конкретного разработчика,
     // подробности см. ниже
-    tuple<TasksInfo, TasksInfo> PerformPersonTasks(const string& person, int task_count) {
+    tuple<TasksInfo, TasksInfo> PerformPersonTasks(const string &person, int task_count)
+    {
         tuple<TasksInfo, TasksInfo> result;
 
         TasksInfo touched;
-        TasksInfo untouched;
+        TasksInfo untouched = persons_.at(person);
+         
+        for (int i = 0; i < task_count; ++i)
+        {
+            TasksInfo temp = persons_.at(person);
+            for (const auto &[taskStatus, count] : temp)
+            {
+                if (count == 0)
+                {
+                    continue;
+                }
+                if (persons_.at(person)[taskStatus] >= 1)
+                {
+                    persons_.at(person)[taskStatus] -= 1;
+                    untouched[taskStatus] -= 1;
+                    if (untouched[taskStatus] <= 0)
+                    {
+                        untouched.erase(taskStatus);
+                    }
 
-        if (persons.count(person) == 0) {
-            return result;
-        }
-        for (int i = 0; i < task_count; ++i) {
-
+                    touched[static_cast<TaskStatus>(static_cast<int>(taskStatus) + 1)] += 1;
+                    persons_.at(person)[static_cast<TaskStatus>(static_cast<int>(taskStatus) + 1)] += 1;
+                    break;
+                }
+            }
         }
 
         return tie(touched, untouched);
-
     }
 
 private:
-    map<string, TasksInfo> persons;
+    map<string, TasksInfo> persons_;
 };
 
 // ѕринимаем словарь по значению, чтобы иметь возможность
 // обращатьс€ к отсутствующим ключам с помощью [] и получать 0,
 // не мен€€ при этом исходный словарь.
-void PrintTasksInfo(TasksInfo tasks_info) {
+void PrintTasksInfo(TasksInfo tasks_info)
+{
     cout << tasks_info[TaskStatus::NEW] << " new tasks"s
-        << ", "s << tasks_info[TaskStatus::IN_PROGRESS] << " tasks in progress"s
-        << ", "s << tasks_info[TaskStatus::TESTING] << " tasks are being tested"s
-        << ", "s << tasks_info[TaskStatus::DONE] << " tasks are done"s << endl;
+         << ", "s << tasks_info[TaskStatus::IN_PROGRESS] << " tasks in progress"s
+         << ", "s << tasks_info[TaskStatus::TESTING] << " tasks are being tested"s
+         << ", "s << tasks_info[TaskStatus::DONE] << " tasks are done"s << endl;
 }
 
-int main() {
+int main()
+{
     TeamTasks tasks;
     tasks.AddNewTask("Ilia"s);
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i)
+    {
         tasks.AddNewTask("Ivan"s);
     }
     cout << "Ilia's tasks: "s;
